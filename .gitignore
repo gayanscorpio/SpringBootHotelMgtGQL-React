@@ -1,0 +1,24 @@
+# Maven/Gradle build
+target/
+build/
+
+# IDE files
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node (React frontend)
+node_modules/
+dist/
+coverage/
+.env
+

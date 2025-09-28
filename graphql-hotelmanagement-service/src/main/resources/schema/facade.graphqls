@@ -1,0 +1,31 @@
+
+type Booking {
+    id: ID!
+    userId: String!
+    hotelId: String!
+    roomId: String
+    checkInDate: String
+    checkOutDate: String
+    status: String
+    totalPrice: Float
+    user: User
+    hotel: Hotel
+}
+
+type User {
+    id: String!
+    name: String!
+    email: String!
+}
+
+type Hotel {
+    id: String!
+    name: String!
+    city: String!
+}
+
+type Query {
+    bookingById(id: ID!): Booking
+    allBookings: [Booking]
+    bookingsByUser(userId: String!): [Booking]
+}

@@ -1,0 +1,23 @@
+type Hotel {
+    id: ID!
+    name: String!
+    city: String!
+    address: String
+    stars: Int
+}
+
+input HotelInput {
+    name: String!
+    city: String!
+    address: String
+    stars: Int
+}
+
+type Query {
+    hotelById(id: ID!): Hotel
+    allHotels: [Hotel]
+}
+
+type Mutation {
+    createHotel(hotel: HotelInput!): Hotel
+}
