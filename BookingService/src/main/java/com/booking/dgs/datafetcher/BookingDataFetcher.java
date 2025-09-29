@@ -17,9 +17,21 @@ public class BookingDataFetcher {
 
 	private final BookingService bookingService;
 
+	// -------- Mutations --------
 	@DgsMutation
-	public Booking createBooking(@InputArgument Booking booking) {
+	public Booking createBooking(@InputArgument String userId, @InputArgument String hotelId,
+			@InputArgument String roomId, @InputArgument String checkInDate, @InputArgument String checkOutDate,
+			@InputArgument Double totalPrice) {
+
+		Booking booking = Booking.builder().userId(userId).hotelId(hotelId).roomId(roomId).checkInDate(checkInDate)
+				.checkOutDate(checkOutDate).totalPrice(totalPrice).build();
+
 		return bookingService.createBooking(booking);
+	}
+
+	@DgsMutation
+	public Booking cancelBooking(@InputArgument String id) {
+		return bookingService.cancelBooking(id);
 	}
 
 	@DgsQuery

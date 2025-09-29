@@ -1,31 +1,29 @@
 type Booking {
-    id: ID!
-    userId: String!
-    hotelId: String!
-    roomId: String
-    checkInDate: String
-    checkOutDate: String
-    status: String
-    totalPrice: Float
-}
-
-# Input type for creating a booking
-input BookingInput {
-    userId: String!
-    hotelId: String!
-    roomId: String
-    checkInDate: String
-    checkOutDate: String
-    status: String
-    totalPrice: Float
+  id: ID!
+  userId: ID!
+  hotelId: ID!
+  roomId: String
+  checkInDate: String
+  checkOutDate: String
+  status: String
+  totalPrice: Float
 }
 
 type Query {
-    bookingById(id: ID!): Booking
-    allBookings: [Booking]
-    bookingsByUser(userId: String!): [Booking]
+  bookingById(id: ID!): Booking
+  allBookings: [Booking]
+  bookingsByUser(userId: ID!): [Booking]
 }
 
 type Mutation {
-    createBooking(booking: BookingInput!): Booking
+  createBooking(
+    userId: ID!
+    hotelId: ID!
+    roomId: String
+    checkInDate: String!
+    checkOutDate: String!
+    totalPrice: Float!
+  ): Booking
+
+  cancelBooking(id: ID!): Booking
 }

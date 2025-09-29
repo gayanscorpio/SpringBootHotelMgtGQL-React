@@ -35,4 +35,10 @@ public class BookingService {
 	public List<Booking> getBookingsByUser(String userId) {
 		return repository.findByUserId(userId);
 	}
+
+	public Booking cancelBooking(String id) {
+		Booking booking = repository.findById(id).orElseThrow(() -> new RuntimeException("Booking not found: " + id));
+		booking.setStatus("CANCELLED");
+		return repository.save(booking);
+	}
 }
