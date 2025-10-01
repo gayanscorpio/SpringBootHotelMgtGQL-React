@@ -52,16 +52,21 @@ public class BookingFacadeDataFetcher {
 	 */
 	@SuppressWarnings("unchecked")
 	private List<Booking> enrichBookings(Map<String, Object> bookingResponse, String key) {
-		if (bookingResponse == null)
+		if (bookingResponse == null) {
+			log.warn("Booking response was null for key={}", key);
 			return List.of();
+		}
 
 		Map<String, Object> data = (Map<String, Object>) bookingResponse.get("data");
-		if (data == null || data.get(key) == null)
+		if (data == null || data.get(key) == null) {
+			log.warn("No data found in booking response for key={}", key);
 			return List.of();
+		}
 
 		// Convert response to list of Booking
 		List<Booking> bookings = mapper.convertValue(data.get(key), new TypeReference<List<Booking>>() {
 		});
+		log.info("Fetched {} bookings for key={} → {}", bookings.size(), key, bookings);
 
 		if (bookings.isEmpty())
 			return bookings;
@@ -95,12 +100,13 @@ public class BookingFacadeDataFetcher {
 			List<Hotel> hotels = mapper.convertValue(hotelData.get("hotelsByIds"), new TypeReference<List<Hotel>>() {
 			});
 			hotels.forEach(h -> hotelMap.put(h.getId(), h));
+			log.info("hotels {}", hotels);
 		} catch (Exception ex) {
 			log.warn("Hotel enrichment failed for booking batch {}", hotelIds, ex);
 		}
 
 		// ✅ Enrich bookings
-		return bookings.stream().map(b -> {
+		List<Booking> enriched = bookings.stream().map(b -> {
 			User u = userMap.get(b.getUserId());
 			Hotel h = hotelMap.get(b.getHotelId());
 
@@ -112,6 +118,9 @@ public class BookingFacadeDataFetcher {
 
 			return b;
 		}).collect(Collectors.toList());
+		log.info("Enriched bookings → {}", enriched);
+
+		return enriched;
 	}
 
 	/**
@@ -123,9 +132,14 @@ public class BookingFacadeDataFetcher {
 	 */
 	@DgsQuery
 	public Booking bookingById(@InputArgument String id) throws Exception {
+		log.info("Fetching booking by id={}", id);
+
 		Map<String, Object> resp = bookingClient.getBookingById(id);
 		List<Booking> bookings = enrichBookings(resp, "bookingById");
-		return bookings.isEmpty() ? null : bookings.get(0);
+		Booking result = bookings.isEmpty() ? null : bookings.get(0);
+
+		log.info("Result bookingById id={} → {}", id, result);
+		return result;
 	}
 
 	/**
@@ -137,7 +151,11 @@ public class BookingFacadeDataFetcher {
 	 */
 	@DgsQuery
 	public List<Booking> bookingsByUser(@InputArgument String userId) throws Exception {
+		log.info("Fetching bookings by userId={}", userId);
+
 		Map<String, Object> resp = bookingClient.getBookingsByUser(userId);
-		return enrichBookings(resp, "bookingsByUser");
+		List<Booking> result = enrichBookings(resp, "bookingsByUser");
+		log.info("Result bookingsByUser userId={} → {}", userId, result);
+		return result;
 	}
 }

@@ -12,8 +12,7 @@ import lombok.*;
 public class Hotel {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	private String id; // ✅ No auto-generation, we set it manually
 
 	private String name;
 

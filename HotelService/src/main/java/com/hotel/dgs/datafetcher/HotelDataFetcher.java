@@ -1,10 +1,10 @@
 package com.hotel.dgs.datafetcher;
 
 import java.util.List;
-
-import org.springframework.stereotype.Component;
+import java.util.UUID;
 
 import com.hotel.dgs.model.Hotel;
+import com.hotel.dgs.model.HotelInput;
 import com.hotel.dgs.repository.HotelRepository;
 
 import com.netflix.graphql.dgs.DgsComponent;
@@ -28,13 +28,23 @@ public class HotelDataFetcher {
 
 	// Fetch hotel by ID
 	@DgsQuery
-	public Hotel hotelById(@InputArgument Long id) {
+	public Hotel hotelById(@InputArgument String id) {
 		return hotelRepository.findById(id).orElse(null);
+	}
+
+	// lets GraphQL receive an array of hotel IDs.
+	@DgsQuery
+	public List<Hotel> hotelsByIds(@InputArgument List<String> ids) {
+		return hotelRepository.findByIdIn(ids);
 	}
 
 	// Create new hotel
 	@DgsMutation
-	public Hotel createHotel(@InputArgument("hotel") Hotel input) {
-		return hotelRepository.save(input);
+	public Hotel createHotel(@InputArgument HotelInput hotel) {
+		Hotel newHotel = Hotel.builder()
+	            .id(hotel.getId() != null ? hotel.getId() : UUID.randomUUID().toString()) // use provided ID if exists
+				.name(hotel.getName()).city(hotel.getCity()).address(hotel.getAddress()).stars(hotel.getStars())
+				.build();
+		return hotelRepository.save(newHotel);
 	}
 }
