@@ -8,11 +8,11 @@ type Booking {
     checkOutDate: String
     status: String
     totalPrice: Float
-    user: User
+    user: CustomeUser
     hotel: Hotel
 }
 
-type User {
+type CustomeUser {
     id: String!
     name: String!
     email: String!
@@ -28,4 +28,17 @@ type Query {
     bookingById(id: ID!): Booking
     allBookings: [Booking]
     bookingsByUser(userId: String!): [Booking]
+}
+
+type Mutation {
+  createBooking(
+    userId: ID!
+    hotelId: ID!
+    roomId: String
+    checkInDate: String!
+    checkOutDate: String!
+    totalPrice: Float!
+  ): Booking
+
+  cancelBooking(id: ID!): Booking
 }

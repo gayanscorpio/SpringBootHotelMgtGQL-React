@@ -18,7 +18,7 @@ public class Booking {
 	private Double totalPrice;
 
 	// Enriched fields
-	private User user;
+	private CustomeUser user;
 	private Hotel hotel;
 
 	// Enrichment flags

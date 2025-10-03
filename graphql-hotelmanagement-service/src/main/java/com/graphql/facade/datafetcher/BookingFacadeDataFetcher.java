@@ -17,8 +17,9 @@ import com.graphql.facade.client.HotelGraphQLClient;
 import com.graphql.facade.client.UserGraphQLClient;
 import com.graphql.facade.model.Booking;
 import com.graphql.facade.model.Hotel;
-import com.graphql.facade.model.User;
+import com.graphql.facade.model.CustomeUser;
 import com.netflix.graphql.dgs.DgsComponent;
+import com.netflix.graphql.dgs.DgsMutation;
 import com.netflix.graphql.dgs.DgsQuery;
 import com.netflix.graphql.dgs.InputArgument;
 
@@ -43,12 +44,13 @@ public class BookingFacadeDataFetcher {
 	}
 
 	/**
-	 * 
-	 * @param bookingResponse - bookingResponse is expected to be the raw GraphQL
-	 *                        response parsed as Map<String,Object>
-	 * @param key             - key is the GraphQL field name to extract (like
-	 *                        "allBookings" or "bookingsByUser").
-	 * @return- Returns a List<Booking>.
+	 * Enrich bookings with user and hotel info. Handles both list-returning queries
+	 * ("allBookings", "bookingsByUser") and single-object queries ("bookingById").
+	 *
+	 * @param bookingResponse - GraphQL response parsed as Map<String,Object>
+	 * @param key             - GraphQL field name (allBookings / bookingsByUser /
+	 *                        bookingById)
+	 * @return List<Booking> (always returns list even for bookingById)
 	 */
 	@SuppressWarnings("unchecked")
 	private List<Booking> enrichBookings(Map<String, Object> bookingResponse, String key) {
@@ -62,12 +64,21 @@ public class BookingFacadeDataFetcher {
 			log.warn("No data found in booking response for key={}", key);
 			return List.of();
 		}
+		Object raw = data.get(key);
+		List<Booking> bookings;
 
-		// Convert response to list of Booking
-		List<Booking> bookings = mapper.convertValue(data.get(key), new TypeReference<List<Booking>>() {
-		});
+		// 🔑 FIX: Detect if GraphQL returned a list or a single object.
+		// - For allBookings/bookingsByUser → List
+		// - For bookingById → Single object
+		if (raw instanceof List) {
+			bookings = mapper.convertValue(raw, new TypeReference<List<Booking>>() {
+			});
+		} else {
+			Booking single = mapper.convertValue(raw, Booking.class);
+			bookings = List.of(single);
+		}
+
 		log.info("Fetched {} bookings for key={} → {}", bookings.size(), key, bookings);
-
 		if (bookings.isEmpty())
 			return bookings;
 
@@ -78,19 +89,31 @@ public class BookingFacadeDataFetcher {
 		Set<String> hotelIds = bookings.stream().map(Booking::getHotelId).filter(Objects::nonNull)
 				.collect(Collectors.toSet());
 
-		Map<String, User> userMap = new HashMap<>();
+		Map<String, CustomeUser> userMap = new HashMap<>();
 		Map<String, Hotel> hotelMap = new HashMap<>();
 
 		// ✅ Batch fetch users
 		try {
 			Map<String, Object> userResp = userClient.getUsersByIds(userIds); // GraphQL call
+			log.debug("Raw userResp from USER-SERVICE: {}", userResp);
+			if (userResp == null || userResp.isEmpty() || !userResp.containsKey("data")) {
+				log.warn("USER-SERVICE returned null/invalid response for userIds={} → {}", userIds, userResp);
+				return bookings; // ✅ return the list as-is (unenriched)
+			}
+
 			Map<String, Object> userData = (Map<String, Object>) userResp.get("data");
-			List<User> users = mapper.convertValue(userData.get("usersByIds"), new TypeReference<List<User>>() {
-			});
+			if (userData == null || userData.isEmpty() || !userData.containsKey("usersByIds")) {
+				log.warn("USER-SERVICE response has no 'usersByIds' field for userIds={} → {}", userIds, userResp);
+				return bookings; // ✅ still return the bookings
+			}
+			List<CustomeUser> users = mapper.convertValue(userData.get("usersByIds"),
+					new TypeReference<List<CustomeUser>>() {
+					});
 			users.forEach(u -> userMap.put(u.getId(), u));
-			log.info("users {}", users);
+			log.info("Enriched {} users from USER-SERVICE for IDs {}", users.size(), userIds);
+
 		} catch (Exception ex) {
-			log.warn("User enrichment failed for booking batch {}", userIds, ex);
+			log.error("User enrichment failed for booking batch {}. Error={}", userIds, ex.getMessage(), ex);
 		}
 
 		// ✅ Batch fetch hotels
@@ -100,14 +123,16 @@ public class BookingFacadeDataFetcher {
 			List<Hotel> hotels = mapper.convertValue(hotelData.get("hotelsByIds"), new TypeReference<List<Hotel>>() {
 			});
 			hotels.forEach(h -> hotelMap.put(h.getId(), h));
+
 			log.info("hotels {}", hotels);
+			log.info("Raw hotelResp={}", hotelResp);
 		} catch (Exception ex) {
 			log.warn("Hotel enrichment failed for booking batch {}", hotelIds, ex);
 		}
 
-		// ✅ Enrich bookings
+		// ✅ Enrich bookings with user + hotel details
 		List<Booking> enriched = bookings.stream().map(b -> {
-			User u = userMap.get(b.getUserId());
+			CustomeUser u = userMap.get(b.getUserId());
 			Hotel h = hotelMap.get(b.getHotelId());
 
 			b.setUser(u);
@@ -158,4 +183,23 @@ public class BookingFacadeDataFetcher {
 		log.info("Result bookingsByUser userId={} → {}", userId, result);
 		return result;
 	}
+
+	@DgsMutation
+	public Booking createBooking(@InputArgument String userId, @InputArgument String hotelId,
+			@InputArgument String roomId, @InputArgument String checkInDate, @InputArgument String checkOutDate,
+			@InputArgument Double totalPrice) throws Exception {
+
+		Map<String, Object> resp = bookingClient.createBooking(userId, hotelId, roomId, checkInDate, checkOutDate,
+				totalPrice);
+		List<Booking> bookings = enrichBookings(resp, "createBooking");
+		return bookings.isEmpty() ? null : bookings.get(0);
+	}
+
+	@DgsMutation
+	public Booking cancelBooking(@InputArgument String id) throws Exception {
+		Map<String, Object> resp = bookingClient.cancelBooking(id);
+		List<Booking> bookings = enrichBookings(resp, "cancelBooking");
+		return bookings.isEmpty() ? null : bookings.get(0);
+	}
+
 }

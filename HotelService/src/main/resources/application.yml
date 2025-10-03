@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: hotel-service
+    name: HOTEL-SERVICE
 
   datasource:
     url: jdbc:mysql://localhost:3306/hotel_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC

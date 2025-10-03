@@ -1,20 +1,21 @@
-type User {
+type CustomeUser {
     id: ID!
     name: String!
     email: String!
 }
 
 input UserInput {
+    id: String
     name: String!
     email: String!
 }
 
 type Query {
-    userById(id: ID!): User
-    allUsers: [User]
-    usersByIds(ids: [ID!]!): [User!]!
+    userById(id: ID!): CustomeUser
+    allUsers: [CustomeUser]
+    usersByIds(ids: [ID!]!): [CustomeUser!]!
 }
 
 type Mutation {
-    createUser(user: UserInput!): User
+    createUser(customeUser: UserInput!): CustomeUser
 }

@@ -10,7 +10,7 @@ import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsMutation;
 import com.netflix.graphql.dgs.DgsQuery;
 import com.netflix.graphql.dgs.InputArgument;
-import com.user.dgs.model.User;
+import com.user.dgs.model.CustomeUser;
 import com.user.dgs.model.UserInput;
 import com.user.dgs.repository.UserRepository;
 
@@ -24,28 +24,37 @@ public class UserDataFetcher {
 	private final UserRepository userRepository;
 
 	@DgsQuery
-	public User userById(@InputArgument String id) {
+	public List<CustomeUser> allUsers() {
+		log.info("Fetching all users");
+		List<CustomeUser> users = userRepository.findAll();
+		log.info("Result: {} users fetched", users.size());
+		return users;
+	}
+
+	@DgsQuery
+	public CustomeUser userById(@InputArgument String id) {
 		log.info("Fetching user by ID: {}", id);
-		User user = userRepository.findById(id).orElse(null);
+		CustomeUser user = userRepository.findById(id).orElse(null);
 		log.info("Result: {}", user);
 		return user;
 	}
 
 	@DgsQuery
-	public List<User> usersByIds(@InputArgument List<String> ids) {
+	public List<CustomeUser> usersByIds(@InputArgument List<String> ids) {
 		log.info("Fetching users by IDs: {}", ids);
-		List<User> users = userRepository.findAllById(ids);
+		List<CustomeUser> users = userRepository.findAllById(ids);
 		log.info("Result: {} users fetched", users.size());
 		return users;
 	}
 
 	@DgsMutation
-	public User createUser(@InputArgument UserInput userInput) {
+	public CustomeUser createUser(@InputArgument("customeUser") UserInput userInput) {
 		log.info("Creating new user: {}", userInput);
-		User newUser = User.builder().id(UUID.randomUUID().toString()).name(userInput.getName())
-				.email(userInput.getEmail()).build();
+		CustomeUser newUser = CustomeUser.builder()
+				.id(userInput.getId() != null ? userInput.getId() : UUID.randomUUID().toString())
+				.name(userInput.getName()).email(userInput.getEmail()).build();
 
-		User savedUser = userRepository.save(newUser);
+		CustomeUser savedUser = userRepository.save(newUser);
 		log.info("User created successfully: {}", savedUser);
 		return savedUser;
 	}
