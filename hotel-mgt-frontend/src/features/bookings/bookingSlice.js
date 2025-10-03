@@ -5,8 +5,8 @@ export const loadAllBookings = createAsyncThunk("bookings/loadAll", async () => 
     return await fetchAllBookings();
 });
 
-export const loadBookingById = createAsyncThunk("bookings/loadById", async (id) => {
-    return await fetchBookingById(id);
+export const loadBookingById = createAsyncThunk("bookings/loadById", async (bookingId) => {
+    return await fetchBookingById(bookingId);
 });
 
 export const loadBookingsByUser = createAsyncThunk("bookings/loadByUser", async (userId) => {

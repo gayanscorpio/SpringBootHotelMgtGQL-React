@@ -15,8 +15,34 @@ export async function gqlRequest(query, variables = {}) {
 export const fetchAllBookings = () =>
     gqlRequest(`query { allBookings { id userId hotelId status totalPrice user { name email } hotel { name city } } }`);
 
-export const fetchBookingById = (id) =>
-    gqlRequest(`query($id: ID!) { bookingById(id: $id) { id userId hotelId status totalPrice user { name } hotel { name } } }`, { id });
+export const fetchBookingById = (bookingId) =>
+    gqlRequest(
+        `query($id: ID!) {
+      bookingById(id: $id) {
+        id
+        status
+        totalPrice
+        checkInDate
+        checkOutDate
+        user { id name email }
+        hotel { id name city }
+      }
+    }`,
+        { id: bookingId }
+    );
 
 export const fetchBookingsByUser = (userId) =>
-    gqlRequest(`query($userId: String!) { bookingsByUser(userId: $userId) { id hotelId status totalPrice hotel { name city } } }`, { userId });
+    gqlRequest(
+        `query($userId: String!) {
+      bookingsByUser(userId: $userId) {
+        id
+        hotelId
+        status
+        totalPrice
+        checkInDate
+        checkOutDate
+        hotel { name city }
+      }
+    }`,
+        { userId }
+    );
